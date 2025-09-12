@@ -15,13 +15,10 @@ def move_mouse_human_like(target_x, target_y):
     """
     Mueve el ratón a la posición especificada con trayectoria humana y tiempo aleatorio
     """
-    print(f"🖱️ Moviendo ratón a ({target_x}, {target_y}) con trayectoria humana...")
-    
     try:
         time.sleep(3)
         
         # Presionar Ctrl para activar el mouse del juego
-        print("⌨️ Presionando Ctrl para activar mouse del juego...")
         keyboard.press_and_release('ctrl')
         time.sleep(1)  # Esperar un poco después de presionar Ctrl
         
@@ -31,7 +28,6 @@ def move_mouse_human_like(target_x, target_y):
         # Mover con trayectoria humana usando easeOutQuad
         pyautogui.moveTo(target_x, target_y, duration=duration, tween=pyautogui.easeOutQuad)
         
-        print(f"✅ Ratón movido a ({target_x}, {target_y}) en {duration:.2f} segundos")
         return True
         
     except Exception as e:
@@ -42,8 +38,6 @@ def detect_loot_window():
     """
     Detecta la ventana de loot en la región específica usando pyautogui
     """
-    print("🔍 Detectando ventana de loot...")
-    
     try:
         # Buscar la imagen de loot en la región específica
         loot_image_path = os.path.join(LOOT_WINDOW_PATH, "loot-window_1.png")
@@ -69,8 +63,6 @@ def detect_fish_type():
     Detecta el tipo de pez buscando primero las imágenes color-zone_ en fish_region,
     luego analiza el color verde solo en esa región específica encontrada
     """
-    print("🐟 Detectando tipo de pez por color...")
-    
     try:
         time.sleep(1.5)
         # Región donde buscar el pez: (988, 382, 656, 326)
@@ -85,44 +77,50 @@ def detect_fish_type():
         # Primero buscar las imágenes exception_ en la región del pez
         exception_found = False
         
-        for i in range(1, 5):  # Buscar exception_1.png hasta exception_4.png
+        # Buscar dinámicamente todas las imágenes exception_ disponibles
+        i = 1
+        while True:
             exception_path = os.path.join(LOOT_WINDOW_PATH, f"exception_{i}.png")
             
-            if os.path.exists(exception_path):
-                print(f"🔍 Buscando exception_{i}.png en fish_region...")
+            if not os.path.exists(exception_path):
+                break  # No hay más imágenes exception_
                 
-                # Buscar la imagen en la región del pez
-                location = pyautogui.locateOnScreen(exception_path, region=fish_region, confidence=0.8)
-                
-                if location:
-                    print(f"⚠️ exception_{i}.png encontrada en fish_region - presionando R directamente")
-                    keyboard.press_and_release('r')
-                    time.sleep(1)
-                    keyboard.press_and_release('space')
-                    return False
+            # Buscar la imagen en la región del pez
+            location = pyautogui.locateOnScreen(exception_path, region=fish_region, confidence=0.8)
+            
+            if location:
+                print(f"⚠️ Exception_{i}.png encontrada - presionando R")
+                keyboard.press_and_release('r')
+                time.sleep(1)
+                keyboard.press_and_release('space')
+                return False
+            
+            i += 1
         
         # Si no se encontró ninguna excepción, buscar las imágenes color-zone_
         color_zone_found = False
         color_zone_location = None
         
-        for i in range(1, 6):  # Buscar color-zone_1.png hasta color-zone_5.png
+        # Buscar dinámicamente todas las imágenes color-zone_ disponibles
+        i = 1
+        while True:
             color_zone_path = os.path.join(LOOT_WINDOW_PATH, f"color-zone_{i}.png")
             
-            if os.path.exists(color_zone_path):
-                print(f"🔍 Buscando color-zone_{i}.png en fish_region...")
+            if not os.path.exists(color_zone_path):
+                break  # No hay más imágenes color-zone_
                 
-                # Buscar la imagen en la región del pez
-                location = pyautogui.locateOnScreen(color_zone_path, region=fish_region, confidence=0.8)
-                
-                if location:
-                    print(f"✅ color-zone_{i}.png encontrada en fish_region")
-                    color_zone_found = True
-                    color_zone_location = location
-                    break
+            # Buscar la imagen en la región del pez
+            location = pyautogui.locateOnScreen(color_zone_path, region=fish_region, confidence=0.8)
+            
+            if location:
+                color_zone_found = True
+                color_zone_location = location
+                break
+            
+            i += 1
         
         if not color_zone_found:
-            print("❌ No se encontró ninguna imagen color-zone_ en fish_region")
-            print("⌨️ Presionando R por defecto")
+            print("❌ No se encontró color-zone - presionando R por defecto")
             keyboard.press_and_release('r')
             return False
         
@@ -133,7 +131,6 @@ def detect_fish_type():
         zone_width = color_zone_location.width
         zone_height = color_zone_location.height
         
-        print(f"📍 Región color-zone encontrada: ({zone_x}, {zone_y}, {zone_width}, {zone_height})")
         
         # Extraer solo la región de color-zone de la imagen
         color_zone_img = img_array[zone_y:zone_y+zone_height, zone_x:zone_x+zone_width]
@@ -157,7 +154,6 @@ def detect_fish_type():
         # Calcular porcentaje de píxeles verdes
         green_percentage = (green_pixels / total_pixels) * 100
         
-        print(f"📊 Píxeles verdes detectados en color-zone: {green_pixels}/{total_pixels} ({green_percentage:.2f}%)")
         
         # Guardar imagen para debug solo si está habilitado
         if DEBUG_MODE:
@@ -174,24 +170,19 @@ def detect_fish_type():
         
         # Si hay más del 30% de píxeles verdes, consideramos que es un pez verde
         if green_percentage > 30.0:
-            print("✅ Pez verde detectado por análisis de color en color-zone")
-            print("⏳ Esperando 1 segundo...")
+            print("✅ Pez verde detectado - descartando")
             time.sleep(1)
-            print("⌨️ Presionando ESPACIO para descartar y pescar nuevamente")
             keyboard.press_and_release('space')
             return True
         else:
-            print("❌ Pez verde no detectado (color dominante no es verde en color-zone)")
-            print("⌨️ Presionando R para recoger")
+            print("❌ Pez no verde - recogiendo")
             keyboard.press_and_release('r')
             time.sleep(1)
-            print("⌨️ Presionando ESPACIO para pescar nuevamente")
             keyboard.press_and_release('space')
             return False
             
     except Exception as e:
         print(f"❌ Error detectando tipo de pez: {e}")
-        print("⌨️ Presionando R por defecto")
         keyboard.press_and_release('r')
         return False
 

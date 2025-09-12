@@ -31,7 +31,6 @@ def load_templates():
                 template = cv2.imread(template_path, cv2.IMREAD_COLOR)
                 if template is not None:
                     templates[letter].append(template)
-                    print(f"✅ Cargada plantilla: {file}")
                 else:
                     print(f"❌ Error cargando plantilla: {file}")
             else:
@@ -176,7 +175,6 @@ def extract_sequence_with_templates(image, max_letters=10, threshold=0.8):
                     
                     # Agregar a la secuencia
                     sequence.append(letter)
-                    print(f"✅ Detectada letra: {letter} en posición ({x}, {y}) con confianza {confidence:.3f}")
                     
                     # Calcular región a excluir: desde 1 pixel a la derecha hacia toda la izquierda
                     # Asumimos que cada letra tiene aproximadamente 30-40 píxeles de ancho
@@ -222,7 +220,6 @@ def extract_sequence_with_templates(image, max_letters=10, threshold=0.8):
             
             # Agregar a la secuencia
             sequence.append(letter)
-            print(f"✅ Detectada letra: {letter} en posición ({x}, {y}) con confianza {confidence:.3f}")
             
             # Calcular región a excluir: desde 1 pixel a la derecha hacia toda la izquierda
             # Asumimos que cada letra tiene aproximadamente 30-40 píxeles de ancho
@@ -238,7 +235,6 @@ def extract_sequence_with_templates(image, max_letters=10, threshold=0.8):
                 f.write(f"\nSecuencia final: {sequence}\n")
                 f.write(f"Regiones excluidas: {excluded_regions}\n")
         
-        print(f"🎯 Secuencia detectada: {sequence}")
         return sequence
         
     except Exception as e:
@@ -249,8 +245,6 @@ def detect_key_sequence():
     """
     Detecta la secuencia de teclas usando detección por plantillas en la región específica
     """
-    print("🔍 Detectando secuencia de teclas con plantillas...")
-    
     try:
         # Capturar la región
         image = capture_sequence_region()
@@ -263,16 +257,13 @@ def detect_key_sequence():
         if DEBUG_MODE:
             os.makedirs("debug_images", exist_ok=True)
             cv2.imwrite(f"debug_images/{timestamp}_captured_original.png", image)
-            print(f"📁 Imagen capturada guardada: debug_images/{timestamp}_captured_original.png")
         
         # Extraer secuencia con plantillas
         sequence = extract_sequence_with_templates(image, max_letters=10, threshold=0.8)
         
         if sequence:
-            print(f"✅ Secuencia detectada: {sequence}")
             return sequence
         else:
-            print("❌ No se pudo detectar secuencia")
             return None
             
     except Exception as e:
@@ -287,18 +278,14 @@ def press_key_sequence(sequence):
         print("❌ No hay secuencia para presionar")
         return False
     
-    print(f"🎮 Presionando secuencia: {sequence}")
-    
     try:
         for key in sequence:
             if key in KEY_MAPPING:
                 keyboard.press_and_release(KEY_MAPPING[key])
-                print(f"  ✓ Presionada tecla: {key}")
                 time.sleep(random.uniform(0.1, 0.2))  # Random entre 0.1 y 0.2 segundos
             else:
                 print(f"  ❌ Tecla no reconocida: {key}")
         
-        print("✅ Secuencia completada")
         return True
         
     except Exception as e:
@@ -309,8 +296,6 @@ def detect_and_press_sequence():
     """
     Detecta y presiona la secuencia de teclas automáticamente
     """
-    print("🚀 Iniciando detección y presión de secuencia...")
-    
     # Detectar la secuencia
     sequence = detect_key_sequence()
     
@@ -318,5 +303,4 @@ def detect_and_press_sequence():
         # Presionar la secuencia
         return press_key_sequence(sequence)
     else:
-        print("❌ No se pudo detectar la secuencia")
         return False
