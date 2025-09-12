@@ -16,14 +16,14 @@ def move_mouse_human_like(target_x, target_y):
     Mueve el ratón a la posición especificada con trayectoria humana y tiempo aleatorio
     """
     try:
-        time.sleep(3)
+        time.sleep(2.7)
         
         # Presionar Ctrl para activar el mouse del juego
         keyboard.press_and_release('ctrl')
         time.sleep(1)  # Esperar un poco después de presionar Ctrl
         
         # Generar tiempo aleatorio entre 0.5 y 1.2 segundos
-        duration = random.uniform(0.5, 1.2)
+        duration = random.uniform(0.4, 0.8)
         
         # Mover con trayectoria humana usando easeOutQuad
         pyautogui.moveTo(target_x, target_y, duration=duration, tween=pyautogui.easeOutQuad)
