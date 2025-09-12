@@ -1,0 +1,7 @@
+pyautogui
+Pillow
+pyscreeze
+pygetwindow
+keyboard
+pytesseract
+opencv-python
