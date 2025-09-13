@@ -44,11 +44,13 @@ def main_pescar():
                     keyboard.press_and_release('space')
                     
                     # Detectar y presionar secuencia de teclas
-                    time.sleep(3)
-                    if detect_and_press_sequence():
-                        print("✅ Secuencia de teclas completada")
+                    time.sleep(2)
+                    sequence_length = detect_and_press_sequence()
+                    if sequence_length:
+                        print(f"✅ Secuencia de teclas completada ({sequence_length} letras)")
                     else:
                         print("❌ Error en secuencia de teclas")
+                        sequence_length = 0
                     
                     # Esperar un poco y luego detectar ventana de loot
                     time.sleep(2)
@@ -60,7 +62,7 @@ def main_pescar():
                         move_mouse_human_like(1433, 535)
                         
                         # Detectar tipo de pez y actuar según corresponda
-                        detect_fish_type()
+                        detect_fish_type(sequence_length)
                     else:
                         print("❌ No se encontró ventana de loot")
                     

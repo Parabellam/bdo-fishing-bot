@@ -42,8 +42,8 @@ def load_templates():
 TEMPLATES = load_templates()
 
 # Región específica donde aparecen las secuencias de teclas
-# Calculada con tu script: (750, 330, 1138, 409)
-SEQUENCE_REGION = (752, 333, 389, 79)  # x, y, width, height 
+# Calculada con tu script: (766, 330, 1166, 417)
+SEQUENCE_REGION = (766, 330, 400, 87)  # x, y, width, height 
 
 # Mapeo de teclas WASD
 KEY_MAPPING = {
@@ -273,16 +273,22 @@ def detect_key_sequence():
 def press_key_sequence(sequence):
     """
     Presiona la secuencia de teclas detectada
+    Cada 3 presiones, espera entre 0.5 y 0.9 segundos
     """
     if not sequence:
         print("❌ No hay secuencia para presionar")
         return False
     
     try:
-        for key in sequence:
+        for i, key in enumerate(sequence):
             if key in KEY_MAPPING:
                 keyboard.press_and_release(KEY_MAPPING[key])
-                time.sleep(random.uniform(0.1, 0.2))  # Random entre 0.1 y 0.2 segundos
+                
+                # Cada 3 presiones (índices 2, 5, 8, etc.), esperar más tiempo
+                if (i + 1) % 3 == 0:
+                    time.sleep(random.uniform(0.5, 0.9))  # Espera larga cada 3 teclas
+                else:
+                    time.sleep(random.uniform(0.1, 0.3))  # Espera normal entre teclas
             else:
                 print(f"  ❌ Tecla no reconocida: {key}")
         
@@ -292,15 +298,73 @@ def press_key_sequence(sequence):
         print(f"❌ Error presionando secuencia: {e}")
         return False
 
+def detect_any_letter_in_sequence():
+    """
+    Detecta si existe alguna letra de la secuencia en la región específica
+    Hace múltiples intentos hasta encontrar al menos una letra
+    Usa OpenCV para detección en escala de grises
+    """
+    try:
+        max_attempts = 50  # Máximo número de intentos
+        attempt = 0
+        
+        while attempt < max_attempts:
+            attempt += 1
+            print(f"🔍 Intento {attempt}/{max_attempts} - Buscando letras en secuencia...")
+            
+            # Capturar la región específica
+            screenshot = pyautogui.screenshot(region=SEQUENCE_REGION)
+            image = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            
+            # Buscar cualquier plantilla en escala de grises
+            for letter, templates in TEMPLATES.items():
+                for template in templates:
+                    # Convertir plantilla a escala de grises si no lo está
+                    if len(template.shape) == 3:
+                        template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+                    else:
+                        template_gray = template
+                    
+                    # Realizar template matching en escala de grises
+                    result = cv2.matchTemplate(gray_image, template_gray, cv2.TM_CCOEFF_NORMED)
+                    
+                    # Encontrar ubicaciones donde la coincidencia supera el threshold
+                    locations = np.where(result >= 0.7)
+                    
+                    if len(locations[0]) > 0:
+                        print(f"✅ Letra detectada: {letter} (intento {attempt})")
+                        return True
+            
+            # Si no encontró nada, esperar un poco antes del siguiente intento
+            if attempt < max_attempts:
+                print(f"⏳ Esperando 0.1s antes del siguiente intento...")
+                time.sleep(0.1)
+        
+        print(f"❌ No se detectó ninguna letra después de {max_attempts} intentos")
+        return False
+        
+    except Exception as e:
+        print(f"❌ Error detectando letras: {e}")
+        return False
+
 def detect_and_press_sequence():
     """
     Detecta y presiona la secuencia de teclas automáticamente
+    Retorna la longitud de la secuencia detectada o False si no se detectó nada
     """
-    # Detectar la secuencia
+    # Primero verificar si hay alguna letra presente
+    if not detect_any_letter_in_sequence():
+        return False
+    
+    # Detectar la secuencia completa
     sequence = detect_key_sequence()
     
     if sequence:
         # Presionar la secuencia
-        return press_key_sequence(sequence)
+        if press_key_sequence(sequence):
+            return len(sequence)
+        else:
+            return False
     else:
         return False

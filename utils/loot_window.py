@@ -16,23 +16,110 @@ def move_mouse_human_like(target_x, target_y):
     Mueve el ratón a la posición especificada con trayectoria humana y tiempo aleatorio
     """
     try:
-        time.sleep(2.7)
+        # Generar posición aleatoria en la pantalla
+        screen_width, screen_height = pyautogui.size()
+        random_x = random.randint(100, screen_width - 100)
+        random_y = random.randint(100, screen_height - 100)
+        
+        # Mover a posición aleatoria con trayectoria humana variable
+        move_human_trajectory(random_x, random_y, random.uniform(2.6, 3.1))
         
         # Presionar Ctrl para activar el mouse del juego
         keyboard.press_and_release('ctrl')
-        time.sleep(1)  # Esperar un poco después de presionar Ctrl
-        
-        # Generar tiempo aleatorio entre 0.5 y 1.2 segundos
-        duration = random.uniform(0.4, 0.8)
+        time.sleep(random.uniform(0.5, 0.8))  # Esperar un poco después de presionar Ctrl
         
         # Mover con trayectoria humana usando easeOutQuad
-        pyautogui.moveTo(target_x, target_y, duration=duration, tween=pyautogui.easeOutQuad)
+        pyautogui.moveTo(target_x, target_y, duration=random.uniform(0.4, 0.8), tween=pyautogui.easeOutQuad)
         
         return True
         
     except Exception as e:
         print(f"❌ Error moviendo ratón: {e}")
         return False
+
+def move_human_trajectory(target_x, target_y, total_duration):
+    """
+    Mueve el cursor con una trayectoria más humana usando múltiples puntos intermedios
+    con velocidades variables
+    """
+    try:
+        # Obtener tamaño de pantalla y posición actual del cursor
+        screen_width, screen_height = pyautogui.size()
+        current_x, current_y = pyautogui.position()
+        
+        # Calcular distancia total
+        distance = ((target_x - current_x) ** 2 + (target_y - current_y) ** 2) ** 0.5
+        
+        # Si la distancia es muy pequeña, mover directamente
+        if distance < 50:
+            pyautogui.moveTo(target_x, target_y, duration=total_duration, tween=pyautogui.easeOutQuad)
+            return
+        
+        # Generar 2-4 puntos intermedios aleatorios
+        num_points = random.randint(2, 4)
+        intermediate_points = []
+        
+        for i in range(num_points):
+            # Crear puntos intermedios con desviación aleatoria
+            progress = (i + 1) / (num_points + 1)
+            
+            # Posición base en línea recta
+            base_x = current_x + (target_x - current_x) * progress
+            base_y = current_y + (target_y - current_y) * progress
+            
+            # Agregar desviación aleatoria (más pequeña para puntos más cercanos al objetivo)
+            deviation_factor = (1 - progress) * 0.3  # Menos desviación cerca del objetivo
+            max_deviation = distance * deviation_factor
+            
+            offset_x = random.uniform(-max_deviation, max_deviation)
+            offset_y = random.uniform(-max_deviation, max_deviation)
+            
+            intermediate_x = int(base_x + offset_x)
+            intermediate_y = int(base_y + offset_y)
+            
+            # Asegurar que esté dentro de la pantalla
+            intermediate_x = max(50, min(screen_width - 50, intermediate_x))
+            intermediate_y = max(50, min(screen_height - 50, intermediate_y))
+            
+            intermediate_points.append((intermediate_x, intermediate_y))
+        
+        # Dividir el tiempo total entre los segmentos con variación
+        segment_times = []
+        remaining_time = total_duration
+        
+        for i in range(len(intermediate_points) + 1):
+            if i == len(intermediate_points):  # Último segmento
+                segment_times.append(remaining_time)
+            else:
+                # Tiempo variable para cada segmento (más rápido al inicio, más lento al final)
+                speed_factor = random.uniform(0.7, 1.3)  # Variación de velocidad
+                segment_time = (remaining_time / (len(intermediate_points) + 1)) * speed_factor
+                segment_time = max(0.1, min(segment_time, remaining_time * 0.8))  # Limitar tiempo
+                segment_times.append(segment_time)
+                remaining_time -= segment_time
+        
+        # Ejecutar los movimientos
+        current_pos_x, current_pos_y = current_x, current_y
+        
+        for i, (next_x, next_y) in enumerate(intermediate_points + [(target_x, target_y)]):
+            segment_duration = segment_times[i]
+            
+            # Elegir tipo de animación aleatorio para cada segmento
+            tweens = [pyautogui.easeInQuad, pyautogui.easeOutQuad, pyautogui.easeInOutQuad, pyautogui.easeInCubic, pyautogui.easeOutCubic]
+            selected_tween = random.choice(tweens)
+            
+            pyautogui.moveTo(next_x, next_y, duration=segment_duration, tween=selected_tween)
+            current_pos_x, current_pos_y = next_x, next_y
+            
+            # Pequeña pausa aleatoria entre segmentos (simula micro-pausas humanas)
+            if i < len(intermediate_points):
+                micro_pause = random.uniform(0.01, 0.05)
+                time.sleep(micro_pause)
+        
+    except Exception as e:
+        print(f"❌ Error en trayectoria humana: {e}")
+        # Fallback a movimiento simple
+        pyautogui.moveTo(target_x, target_y, duration=total_duration, tween=pyautogui.easeOutQuad)
 
 def detect_loot_window():
     """
@@ -58,10 +145,11 @@ def detect_loot_window():
         print(f"❌ Error detectando ventana de loot: {e}")
         return False
 
-def detect_fish_type():
+def detect_fish_type(sequence_length=0):
     """
     Detecta el tipo de pez buscando primero las imágenes color-zone_ en fish_region,
-    luego analiza el color verde solo en esa región específica encontrada
+    luego analiza el color verde solo en esa región específica encontrada.
+    Si sequence_length >= 7, salta la evaluación del color verde y recoge directamente.
     """
     try:
         time.sleep(1.5)
@@ -168,16 +256,26 @@ def detect_fish_type():
         keyboard.press_and_release('ctrl')
         time.sleep(0.5)
         
+        # Si la secuencia tiene 7 o más letras, saltar evaluación de color verde y recoger directamente
+        if sequence_length >= 7:
+            print(f"🎯 Secuencia larga detectada ({sequence_length} letras) - recogiendo directamente")
+            keyboard.press_and_release('r')
+            time.sleep(random.uniform(0.4, 0.9))
+            keyboard.press_and_release('space')
+            return False
+        
         # Si hay más del 30% de píxeles verdes, consideramos que es un pez verde
         if green_percentage > 30.0:
             print("✅ Pez verde detectado - descartando")
-            time.sleep(1)
+            time.sleep(random.uniform(0.1, 0.3))
+            keyboard.press_and_release('space')
+            time.sleep(random.uniform(0.3, 0.8))
             keyboard.press_and_release('space')
             return True
         else:
             print("❌ Pez no verde - recogiendo")
             keyboard.press_and_release('r')
-            time.sleep(1)
+            time.sleep(random.uniform(0.4, 0.9))
             keyboard.press_and_release('space')
             return False
             
