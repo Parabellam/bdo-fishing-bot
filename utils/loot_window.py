@@ -223,17 +223,46 @@ def detect_fish_type(sequence_length=0):
         # Extraer solo la región de color-zone de la imagen
         color_zone_img = img_array[zone_y:zone_y+zone_height, zone_x:zone_x+zone_width]
         
-        # Analizar píxeles verdes directamente en RGB sin filtros
-        # Definir rangos de color verde en RGB
-        # Verde: R < 150, G > 100, B < 150 (píxeles con más verde que rojo y azul)
+        # Analizar píxeles verdes usando rangos específicos de color
+        # Colores verdes específicos detectados en el juego:
+        # #445c31 (68,92,49), #5c6c4c (92,108,76), #4c5834 (76,88,52)
+        # #3a4a25 (58,74,37), #7c8c5e (124,140,94), #515b3d (81,91,61)
+        # #646c4b (100,108,75)
         
         # Separar canales RGB
         r_channel = color_zone_img[:, :, 0]  # Canal rojo
         g_channel = color_zone_img[:, :, 1]  # Canal verde
         b_channel = color_zone_img[:, :, 2]  # Canal azul
         
-        # Crear máscara para píxeles verdes: G > R y G > B y G > umbral_mínimo
-        green_mask = (g_channel > r_channel) & (g_channel > b_channel) & (g_channel > 80)
+        # Crear máscara para píxeles verdes usando rangos específicos
+        green_mask = np.zeros_like(g_channel, dtype=bool)
+        
+        # Definir rangos de color verde específicos con tolerancia ±15
+        green_ranges = [
+            # #445c31 (68,92,49) ±15
+            ((53, 83), (77, 107), (34, 64)),
+            # #5c6c4c (92,108,76) ±15  
+            ((77, 107), (93, 123), (61, 91)),
+            # #4c5834 (76,88,52) ±15
+            ((61, 91), (73, 103), (37, 67)),
+            # #3a4a25 (58,74,37) ±15
+            ((43, 73), (59, 89), (22, 52)),
+            # #7c8c5e (124,140,94) ±15
+            ((109, 139), (125, 155), (79, 109)),
+            # #515b3d (81,91,61) ±15
+            ((66, 96), (76, 106), (46, 76)),
+            # #646c4b (100,108,75) ±15
+            ((85, 115), (93, 123), (60, 90))
+        ]
+        
+        # Aplicar cada rango de color verde
+        for r_range, g_range, b_range in green_ranges:
+            range_mask = (
+                (r_channel >= r_range[0]) & (r_channel <= r_range[1]) &
+                (g_channel >= g_range[0]) & (g_channel <= g_range[1]) &
+                (b_channel >= b_range[0]) & (b_channel <= b_range[1])
+            )
+            green_mask |= range_mask
         
         # Contar píxeles verdes solo en la región color-zone
         green_pixels = np.sum(green_mask)
@@ -241,6 +270,10 @@ def detect_fish_type(sequence_length=0):
         
         # Calcular porcentaje de píxeles verdes
         green_percentage = (green_pixels / total_pixels) * 100
+        
+        # Debug: mostrar información detallada
+        print(f"🔍 Análisis de color verde:")
+        print(f"   - Píxeles verdes detectados: {green_pixels} ({green_percentage:.1f}%)")
         
         
         # Guardar imagen para debug solo si está habilitado
@@ -264,8 +297,8 @@ def detect_fish_type(sequence_length=0):
             keyboard.press_and_release('space')
             return False
         
-        # Si hay más del 30% de píxeles verdes, consideramos que es un pez verde
-        if green_percentage > 30.0:
+        # Si hay más del 40% de píxeles verdes, consideramos que es un pez verde
+        if green_percentage > 40.0:
             print("✅ Pez verde detectado - descartando")
             time.sleep(random.uniform(0.1, 0.3))
             keyboard.press_and_release('space')
