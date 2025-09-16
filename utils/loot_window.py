@@ -22,7 +22,7 @@ def move_mouse_human_like(target_x, target_y):
         random_y = random.randint(100, screen_height - 100)
         
         # Mover a posición aleatoria con trayectoria humana variable
-        move_human_trajectory(random_x, random_y, random.uniform(2.6, 3.1))
+        move_human_trajectory(random_x, random_y, random.uniform(1, 2))
         
         # Presionar Ctrl para activar el mouse del juego
         keyboard.press_and_release('ctrl')

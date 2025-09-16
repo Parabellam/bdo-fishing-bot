@@ -1,4 +1,5 @@
 import time
+import random
 from time import sleep
 from tkinter import messagebox
 import pyautogui
@@ -52,8 +53,26 @@ def main_pescar():
                         print("❌ Error en secuencia de teclas")
                         sequence_length = 0
                     
-                    # Esperar un poco y luego detectar ventana de loot
-                    time.sleep(2)
+                    # Presionar ESC con intervalos aleatorios hasta encontrar menu_1.png en la región específica
+                    menu_encontrado = False
+                    while not menu_encontrado:
+                        keyboard.press_and_release('esc')
+                        # Intervalo aleatorio entre 0.3 y 0.7 segundos
+                        intervalo = random.uniform(0.3, 0.7)
+                        time.sleep(intervalo)
+                        
+                        # Buscar menu_1.png en la región específica (476, 115, 616, 175)
+                        try:
+                            menu_location = pyautogui.locateOnScreen("assets/Menu/menu_1.png", 
+                                                                   region=(476, 115, 616, 175))
+                            if menu_location:
+                                print("✅ Menu encontrado en la región específica")
+                                menu_encontrado = True
+                                # Esperar 0.2 segundos y pulsar ESC de nuevo
+                                time.sleep(0.2)
+                                keyboard.press_and_release('esc')
+                        except pyautogui.ImageNotFoundException:
+                            continue
                     
                     if detect_loot_window():
                         print("✅ Ventana de loot encontrada")
